@@ -20,14 +20,14 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Register16bit(I, E, FunSel,Q, clock
+module Register16bit(I, E, FunSel,Q, Clock
     );
     input wire[15:0] I;
-    input wire clock; 
+    input wire Clock; 
     input wire E;
     input wire[1:0] FunSel;
     output reg[15:0] Q;
-    always@(posedge clock)
+    always@(posedge Clock)
     begin
     if(E) begin
     case(FunSel)
