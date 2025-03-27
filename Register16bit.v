@@ -34,7 +34,7 @@ module Register16bit(I, E, FunSel,Q, Clock
     2'b00 : Q <= Q - 1'b1;
     2'b01 : Q <= Q + 1'b1;
     2'b10 : Q <= I;
-    2'b11 : Q <= 0;
+    2'b11 : Q <= 16'b0;
 
     endcase
     end
