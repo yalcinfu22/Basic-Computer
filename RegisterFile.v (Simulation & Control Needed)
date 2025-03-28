@@ -63,7 +63,7 @@ generate
    end
 endgenerate
 
-always@(*) // Multiplexer: connects only one register's output to OutA at a time based on OutASel
+always@(*) // Multiplexer: connects only one register's output to OutA at a time based on OutASel (3rd State buffer is also an alternative)
 begin
 begin
   case (OutASel)
