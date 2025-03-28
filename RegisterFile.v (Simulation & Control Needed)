@@ -63,7 +63,8 @@ generate
    end
 endgenerate
 
-always@(*)
+always@(*) // Multiplexer: connects only one register's output to OutA at a time based on OutASel
+begin
 begin
   case (OutASel)
   3'd0 : OutA = ROut[1];
@@ -78,7 +79,7 @@ begin
   endcase
 end
 
-always@(*)
+always@(*) // Multiplexer: connects only one register's output to OutB at a time based on OutBSel
 begin
   case (OutBSel)
   3'd0 : OutB = ROut[1];
