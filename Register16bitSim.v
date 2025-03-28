@@ -31,15 +31,15 @@ module Register16bitSim;
  .FunSel(FunSel),
  .I(I),
  .E(E),
- .clk(clk),
+ .Clock(Clock),
  .Q(Q)
  );
  
  initial
  begin
-   clk = 0;
+   Clock = 0;
    forever #5
-     clk = ~clk;
+     Clock = ~Clock;
  end
  
  initial
