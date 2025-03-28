@@ -24,21 +24,21 @@ module Register32bitSim;
   reg [2:0] FunSel;
   reg [31:0] I;
   reg E;
-  reg clk;
+  reg Clock;
   wire [31:0] Q;
 
 Register32bit reg1(
   .FunSel(FunSel),
   .I(I),
   .E(E),
-  .clk(clk),
+  .Clock(Clock),
   .Q(Q)
 );
 
 initial begin
-  clk = 0;
+  Clock = 0;
   forever #5
-    clk = ~clk;
+    Clock = ~Clock;
 end
 
 initial begin
