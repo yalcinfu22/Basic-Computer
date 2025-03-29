@@ -31,13 +31,13 @@ input wire Clock;
 output reg [15:0] OutC;
 output reg [15:0] OutD;
 
-wire [15:0] AROut [1:3];
+wire [15:0] AROut [0:2];
 Register16bit PC(
   .FunSel(FunSel),
   .I(I[15:0]),
   .E(RegSel[2]),
   .Clock(Clock),
-  .Q(AROut[1])
+  .Q(AROut[0])
 );
 
 Register16bit SP(
@@ -45,7 +45,7 @@ Register16bit SP(
   .I(I[15:0]),
   .E(RegSel[1]),
   .Clock(Clock),
-  .Q(AROut[2])
+  .Q(AROut[1])
 );
 
 Register16bit AR(
@@ -53,7 +53,7 @@ Register16bit AR(
   .I(I[15:0]),
   .E(RegSel[0]),
   .Clock(Clock),
-  .Q(AROut[3])
+  .Q(AROut[2])
 );
 
 always@(*)
