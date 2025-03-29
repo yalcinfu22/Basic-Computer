@@ -1,0 +1,65 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 29.03.2025 07:12:01
+// Design Name: 
+// Module Name: RegisterFileSim
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module RegisterFileSim;
+  reg [31:0] I;
+  reg [3:0] RegSel;
+  reg [3:0] ScrSel;
+  reg [2:0] FunSel;
+  reg [2:0] OutASel;
+  reg [2:0] OutBSel;
+  reg Clock;
+  wire [31:0] OutA;
+  wire [31:0] OutB;
+ 
+ RegisterFile RF1(
+   .I(I),
+   .RegSel(RegSel),
+   .ScrSel(ScrSel),
+   .FunSel(FunSel),
+   .OutASel(OutASel),
+   .OutBSel(OutBSel),
+   .Clock(Clock),
+   .OutA(OutA),
+   .OutB(OutB)
+ );
+ 
+ initial
+ begin
+   Clock = 1'b0;
+   forever #5
+     Clock = ~Clock;
+ end
+ 
+ initial
+ begin
+   RegSel = 4'b1110;
+   ScrSel = 4'b1111;
+   I = 32'hF0F05A5A;
+   FunSel = 3'b010;
+   OutASel = 3'b011;
+   OutBSel = 3'b000;
+   #10;
+  $finish;
+ end
+ 
+endmodule
