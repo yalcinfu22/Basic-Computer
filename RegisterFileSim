@@ -50,16 +50,53 @@ module RegisterFileSim;
      Clock = ~Clock;
  end
  
- initial
- begin
-   RegSel = 4'b1110;
-   ScrSel = 4'b1111;
-   I = 32'hF0F05A5A;
-   FunSel = 3'b010;
-   OutASel = 3'b011;
-   OutBSel = 3'b000;
-   #10;
-  $finish;
- end
+ // Test cases: sequence different operations and bus selections
+  initial 
+  begin
+  
+    RegSel = 4'b1110; // only R[4] is not loaded
+    ScrSel = 4'b1111;
+    I = 32'hF0F05A5A;
+    FunSel = 3'b010;
+    OutASel = 3'd3;   // should be XXXX
+    OutBSel = 3'd0;
+    #10;
+    
+    
+    RegSel = 4'b1101;  
+    I = 32'h12345678;
+    FunSel = 3'b000;   
+    OutASel = 3'd2; 
+    OutBSel = 3'd0;  
+    #10;
+    
+    RegSel = 4'b1111;  
+    ScrSel = 4'b1110;  
+    I = 32'hAABBCCDD;
+    FunSel = 3'b001;   
+    OutASel = 3'd4;   
+    OutBSel = 3'd7;    
+    #10;
+    
+    RegSel = 4'b1100;  
+    ScrSel = 4'b1101;  
+    I = 32'hDEADBEEF;
+    FunSel = 3'b011; 
+    OutASel = 3'd1; 
+    OutBSel = 3'd5;    
+    #10;
+    
+
+
+    RegSel = 4'b1111; 
+    ScrSel = 4'b1111;
+    I = 32'hCAFEBABE;  
+    OutASel = 3'd3;
+    OutBSel = 3'd7;
+    #10;
+    
+    $finish;
+  end
+endmodule
  
 endmodule
