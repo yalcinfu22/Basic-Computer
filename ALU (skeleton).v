@@ -40,7 +40,9 @@ FlagRegister FR1(
   .O(flagO)
 );
 
-assign FlagsOut = {flagZ, flagC, flagN, flagO}; 
+assign FlagsOut = {flagZ, flagC, flagN, flagO};
+assign Cin = flagC;
+
 reg [32:0] Sum;
 reg [31:0] Res;
 reg MSB_Sum;
@@ -96,10 +98,24 @@ always @(*) begin
       ALUOut = Res;
      end
      5'b00101: begin
-       // Logic for 00101
+     Sum[32:16] = A_H + B_H + Cin; 
+     Res = {{16{Sum[31]}}, Sum[31:16]};
+     flagInput[0] = (MSB_A == MSB_B) && (MSB_Res != MSB_A);
+     flagInput[1] = MSB_Res;
+     flagInput[2] = MSB_Sum;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b00110: begin
-       // Logic for 00110
+     Sum[32:16] = A_H + ~B_H + Cin; 
+     Res = {{16{Sum[31]}}, Sum[31:16]};
+     if(MSB_A == 1'b0 && MSB_B == 1'b1 && MSB_Res == 1'b1)
+      flagInput[0] = 1;
+     else if(MSB_A == 1'b1 && MSB_B == 1'b0 && MSB_Res == 1'b0)
+      flagInput[1] = 1;
+     flagInput[2] = MSB_Sum;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b00111: begin
        // Logic for 00111
