@@ -45,8 +45,7 @@ assign Cin = flagC;
 
 reg [32:0] Sum;
 reg [31:0] Res;
-reg MSB_Sum;
-reg MSB_Res;
+reg [15:0] Res_L, Res_H;
 
 wire MSB_A, MSB_B;
 wire [15:0] A_L, A_H, B_L, B_H;
@@ -56,15 +55,12 @@ assign B_L = B[15:0];
 assign B_H = B[31:16];
 assign MSB_A = A[31];
 assign MSB_B = B[31];
-
+wire MSB_Sum = Sum[32];
+wire MSB_Res = Res[31];
 always @(*) begin
-   MSB_Sum = Sum[32];
-   MSB_Res = Res[31];
-   // Clear default values
-   ALUOut = 32'b0;
-   flagInput = 4'b0;
-   Res = 32'b0;
-   Sum = 33'b0;
+  // Clear default values
+  Res = 32'b0;
+  Sum = 33'b0;
    
    case(FunSel)
      // Cases where MSB is 0 (from 00000 to 01111)
@@ -112,13 +108,18 @@ always @(*) begin
      if(MSB_A == 1'b0 && MSB_B == 1'b1 && MSB_Res == 1'b1)
       flagInput[0] = 1;
      else if(MSB_A == 1'b1 && MSB_B == 1'b0 && MSB_Res == 1'b0)
-      flagInput[1] = 1;
+      flagInput[0] = 1;
+     flagInput[1] = MSB_Res;
      flagInput[2] = MSB_Sum;
      flagInput[3] = (Res == 32'b0);
      ALUOut = Res;
      end
      5'b00111: begin
-       // Logic for 00111
+     Res_L = A_H & B_H;
+     Res = {{16{Res_L[15]}}, Res_L};
+     flagInput[1] = MSB_Res;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b01000: begin
        // Logic for 01000
