@@ -223,7 +223,7 @@ always @(*) begin
      ALUOut = Res;
      end
      5'b10110: begin
-     Sum = A_H + ~B_H + Cin; 
+     Sum = A + ~B + Cin; 
      Res = Sum[31:0]; // discard 33th bit
      if(MSB_A == 1'b0 && MSB_B == 1'b1 && MSB_Res == 1'b1)
       flagInput[0] = 1;
@@ -235,25 +235,25 @@ always @(*) begin
      ALUOut = Res;
      end
      5'b10111: begin
-     Res = A_H & B_H;
+     Res = A & B;
      flagInput[1] = MSB_Res;
      flagInput[3] = (Res == 32'b0);
      ALUOut = Res;
      end
      5'b11000: begin
-     Res = A_H | B_H;
+     Res = A | B;
      flagInput[1] = MSB_Res;
      flagInput[3] = (Res == 32'b0);
      ALUOut = Res;
      end
      5'b11001: begin
-     Res = A_H ^ B_H;
+     Res = A ^ B;
      flagInput[1] = MSB_Res;
      flagInput[3] = (Res == 32'b0);
      ALUOut = Res;
      end
      5'b11010: begin
-     Res = ~(A_H & B_H);
+     Res = ~(A & B);
      flagInput[1] = MSB_Res;
      flagInput[3] = (Res == 32'b0);
      ALUOut = Res;
@@ -287,7 +287,7 @@ always @(*) begin
      5'b11111: begin
      Res = {Cin, A[31:1]};
      flagInput[1] = MSB_Res;
-     flagInput[2] = LSB_A_H; 
+     flagInput[2] = LSB_A; 
      flagInput[3] = (Res == 32'b0);
      ALUOut = Res;
      end
@@ -296,5 +296,4 @@ always @(*) begin
      end
    endcase
  end
-      
 endmodule
