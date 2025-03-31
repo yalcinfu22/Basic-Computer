@@ -143,7 +143,12 @@ always @(*) begin
      ALUOut = Res;  
      end
      5'b01011: begin
-       // Logic for 01011
+       flagInput[2] = MSB_A; // MSB_A == A[31]
+       flagInput[1] = A[30]; // One bit before MSB becomes the sign bit
+       Res_L = {A_H[14:0], 1'b0};
+       Res = {{16{Res_L[15]}}, Res_L};
+       flagInput[3] = (Res == 32'b0);
+       ALUOut = Res;
      end
      5'b01100: begin
        // Logic for 01100
