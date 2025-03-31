@@ -139,8 +139,8 @@ always @(*) begin
       ALUOut = Res;
     end
     5'b00110: begin
-      // 16-bit Subtraction: A_H - B_H computed as A_H + ~B_H + Cin.
-      Sum[32:16] = A_H + ~B_H + Cin;
+      // 16-bit Subtraction: A_H - B_H computed as A_H + ~B_H + 1.
+      Sum[32:16] = A_H + ~B_H + 1'b1;
       Res = {{16{Sum[31]}}, Sum[31:16]};
       // Set overflow flag based on specific sign conditions.
       if(MSB_A == 1'b0 && MSB_B == 1'b1 && MSB_Res == 1'b1)
@@ -275,8 +275,8 @@ always @(*) begin
       flagInput[3] = (Res == 32'b0);
       ALUOut = Res;
     end
-    5'b10110: begin // 32-bit Subtraction: A - B computed as A + ~B + Cin.
-      Sum = A + ~B + Cin;
+    5'b10110: begin // 32-bit Subtraction: A - B computed as A + ~B + 1.
+      Sum = A + ~B + 1'b1;
       Res = Sum[31:0];
       // Overflow detection for subtraction.
       if(MSB_A == 1'b0 && MSB_B == 1'b1 && MSB_Res == 1'b1)
