@@ -47,7 +47,7 @@ reg [32:0] Sum;
 reg [31:0] Res;
 reg [15:0] Res_L, Res_H;
 
-wire MSB_A, MSB_B;
+wire MSB_A, MSB_B, LSB_A_H, LSB_A;
 wire [15:0] A_L, A_H, B_L, B_H;
 assign A_L = A[15:0];
 assign A_H = A[31:16];
@@ -55,8 +55,11 @@ assign B_L = B[15:0];
 assign B_H = B[31:16];
 assign MSB_A = A[31];
 assign MSB_B = B[31];
+assign LSB_A = A[0];
+assign LSB_A_H = A_H[0];
 wire MSB_Sum = Sum[32];
 wire MSB_Res = Res[31];
+
 always @(*) begin
   // Clear default values
   Res = 32'b0;
@@ -159,10 +162,18 @@ always @(*) begin
      ALUOut = Res;
      end
      5'b01101: begin
-       // Logic for 01101
+     Res_L = {MSB_A, A_H[15:1]}; // MSB_A == A_H[15] == A[31]
+     Res = {{16{MSB_A}}, Res_L};
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b01110: begin
-       // Logic for 01110
+     Res_L = {A_H[14:0], Cin}; // Using Res to circular shift LSB becomes Cin
+     Res = {{16{Res_L[15]}}, Res_L}; // extend the result to 32 bit
+     flagInput[1] = MSB_Res; // sign is MSB_Res
+     flagInput[2] = MSB_A; // The carry for CLR is the MSB_A. A is unchanged so it is usable.
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b01111: begin
        // Logic for 01111
