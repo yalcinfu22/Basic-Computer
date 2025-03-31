@@ -154,7 +154,7 @@ always @(*) begin
      ALUOut = Res;
      end
      5'b01100: begin
-     flagInput[2] = A_H[0]; // lowest bit will be the carry after shift
+     flagInput[2] = LSB_A_H; // lowest bit will be the carry after shift
      flagInput[1] = 0; // sign bit is always zero
      Res_L = {1'b0, A_H[15:1]}; // equivalent to right shift
      Res = {{16{Res_L[15]}}, Res_L};
@@ -176,60 +176,123 @@ always @(*) begin
      ALUOut = Res;
      end
      5'b01111: begin
-       // Logic for 01111
+     Res_L = {Cin, A_H[15:1]}; 
+     Res = {{16{Res_L[15]}}, Res_L};
+     flagInput[1] = MSB_Res;
+     flagInput[2] = LSB_A_H; 
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      // Cases where MSB is 1 (from 10000 to 11111)
      5'b10000: begin
-       // Logic for 10000
+     flagInput[1] = MSB_A;
+     flagInput[3] = (A == 32'b0);
+     ALUOut = A;
      end
      5'b10001: begin
-       // Logic for 10001
+     flagInput[1] = MSB_B;
+     flagInput[3] = (B == 32'b0);
+     ALUOut = B;
      end
      5'b10010: begin
-       // Logic for 10010
+     flagInput[1] = ~MSB_A;
+     flagInput[3] = (~A == 32'b0);
+     ALUOut = ~A;
      end
      5'b10011: begin
-       // Logic for 10011
+     flagInput[1] = ~MSB_B;
+     flagInput[3] = (~B == 32'b0);
+     ALUOut = ~B;
      end
      5'b10100: begin
-       // Logic for 10100
+     Sum = A + B; 
+     Res = Sum[31:0]; // discard 33th bit
+     flagInput[0] = (MSB_A == MSB_B) && (MSB_Res != MSB_A);
+     flagInput[1] = MSB_Res;
+     flagInput[2] = MSB_Sum;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b10101: begin
-       // Logic for 10101
+     Sum = A + B + Cin;
+     Res = Sum[31:0]; // discard 33th bit
+     flagInput[0] = (MSB_A == MSB_B) && (MSB_Res != MSB_A);
+     flagInput[1] = MSB_Res;
+     flagInput[2] = MSB_Sum;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b10110: begin
-       // Logic for 10110
+     Sum = A_H + ~B_H + Cin; 
+     Res = Sum[31:0]; // discard 33th bit
+     if(MSB_A == 1'b0 && MSB_B == 1'b1 && MSB_Res == 1'b1)
+      flagInput[0] = 1;
+     else if(MSB_A == 1'b1 && MSB_B == 1'b0 && MSB_Res == 1'b0)
+      flagInput[0] = 1;
+     flagInput[1] = MSB_Res;
+     flagInput[2] = MSB_Sum;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b10111: begin
-       // Logic for 10111
+     Res = A_H & B_H;
+     flagInput[1] = MSB_Res;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b11000: begin
-       // Logic for 11000
+     Res = A_H | B_H;
+     flagInput[1] = MSB_Res;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b11001: begin
-       // Logic for 11001
+     Res = A_H ^ B_H;
+     flagInput[1] = MSB_Res;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b11010: begin
-       // Logic for 11010
+     Res = ~(A_H & B_H);
+     flagInput[1] = MSB_Res;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b11011: begin
-       // Logic for 11011
+     flagInput[2] = MSB_A; // MSB_A == A[31] == A_H[15]
+     flagInput[1] = A[30]; // One bit before MSB becomes the sign bit
+     Res = {A[30:0], 1'b0}; // equivalent to left shift
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b11100: begin
-       // Logic for 11100
+     flagInput[2] = LSB_A; // lowest bit will be the carry after shift
+     flagInput[1] = 0; // sign bit is always zero
+     Res = {1'b0, A[31:1]}; // equivalent to right shift
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b11101: begin
-       // Logic for 11101
+     Res = {MSB_A, A[31:1]}; // MSB_A == A_H[15] == A[31]
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b11110: begin
-       // Logic for 11110
+     Res = {A[30:0], Cin}; // Using Res to circular shift LSB becomes Cin
+     flagInput[1] = MSB_Res; // sign is MSB_Res
+     flagInput[2] = MSB_A; // The carry for CLR is the MSB_A. A is unchanged so it is usable.
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b11111: begin
-       // Logic for 11111
+     Res = {Cin, A[31:1]};
+     flagInput[1] = MSB_Res;
+     flagInput[2] = LSB_A_H; 
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
- 
      default: begin
-      // Optional default case logic
+      // What can be put here?
      end
    endcase
  end
