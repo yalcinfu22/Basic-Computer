@@ -143,7 +143,7 @@ always @(*) begin
      ALUOut = Res;  
      end
      5'b01011: begin
-     flagInput[2] = MSB_A; // MSB_A == A[31]
+     flagInput[2] = MSB_A; // MSB_A == A[31] == A_H[15]
      flagInput[1] = A[30]; // One bit before MSB becomes the sign bit
      Res_L = {A_H[14:0], 1'b0}; // equivalent to left shift
      Res = {{16{Res_L[15]}}, Res_L};
@@ -151,7 +151,12 @@ always @(*) begin
      ALUOut = Res;
      end
      5'b01100: begin
-       // Logic for 01100
+     flagInput[2] = A_H[0]; // lowest bit will be the carry after shift
+     flagInput[1] = 0; // sign bit is always zero
+     Res_L = {1'b0, A_H[15:1]}; // equivalent to right shift
+     Res = {{16{Res_L[15]}}, Res_L};
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;
      end
      5'b01101: begin
        // Logic for 01101
