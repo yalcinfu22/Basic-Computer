@@ -10,12 +10,12 @@
 // Target Devices: 
 // Tool Versions: 
 // Description: 
-//   This ALU performs a wide range of operations on 32-bit inputs. For some
-//   operations only the upper 16 bits (with sign extension) are used; for others,
+//   This ALU performs a wide range of operations on 32-bit inputs. For some 
+//   operations only the upper 16 bits (with sign extension) are used; for others, 
 //   the full 32-bit operands are processed. Supported operations include pass-
 //   through, bitwise logic (NOT, AND, OR, XOR, NAND), arithmetic (addition and 
 //   subtraction with overflow and carry detection), logical/arithmetic shifts, and
-//   circular (rotate) shifts that incorporate a carry bit. The status flags are
+//   circular (rotate) shifts that incorporate a carry bit. The status flags are 
 //   generated internally and updated synchronously.
 // 
 // Flags (output FlagsOut) are defined as follows (bit order from MSB to LSB):
@@ -34,80 +34,71 @@ module ArithmeticLogicUnit (
   input  wire [31:0] A,         // 32-bit input A
   input  wire [31:0] B,         // 32-bit input B
   input  wire [4:0]  FunSel,    // 5-bit function select signal
-  input  wire      WF,          // Write flag: enables updating of FlagsOut
-  input  wire      Clock,       // Clock signal (for synchronous flag update)
+  input  wire       WF,         // Write flag: enables updating of FlagsOut
+  input  wire       Clock,      // Clock signal (for synchronous flag update)
   output reg  [3:0] FlagsOut,   // Status flags: {Zero, Carry, Negative, Overflow}
   output reg  [31:0] ALUOut    // 32-bit ALU result output
 );
 
-  //--------------------------------------------------------------------------
-  // Internal flag register:
-  // internalFlags holds the computed flag values.
-  // Bit assignment:
-  //   internalFlags[3] = Zero flag (Z)
-  //   internalFlags[2] = Carry flag (C)
-  //   internalFlags[1] = Negative flag (N)
-  //   internalFlags[0] = Overflow flag (O)
-  //--------------------------------------------------------------------------
+  // Internal flag register: internalFlags holds computed flag values.
+  // Bit assignment: [3]=Zero, [2]=Carry, [1]=Negative, [0]=Overflow.
   reg [3:0] internalFlags;
 
   //--------------------------------------------------------------------------
-  // Splitting the 32-bit inputs and sign extension for 16-bit operations
+  // Input Splitting and Sign Extension for 16-bit Operations
   //--------------------------------------------------------------------------
-  // Lower 16 bits (not used in our 16-bit ALU operations).
+
+  // Lower 16 bits (unused for 16-bit upper-half operations).
   wire [15:0] A_L, B_L;
   assign A_L = A[15:0];
   assign B_L = B[15:0];
 
-  // For 16-bit operations on the upper half, we sign-extend A[31:16] and B[31:16]
-  // into a full 32-bit word.
+  // Sign-extend the upper 16 bits of A and B to full 32 bits.
   wire [31:0] sign_extended_A_H, sign_extended_B_H;
   assign sign_extended_A_H = {{16{A[31]}}, A[31:16]};
   assign sign_extended_B_H = {{16{B[31]}}, B[31:16]};
 
   //--------------------------------------------------------------------------
-  // Extracting key bits from A and B for flag calculations.
+  // Key Bit Extraction for Flag Calculations
   //--------------------------------------------------------------------------
-  wire MSB_A, MSB_B;      // Most Significant Bits (sign bits) of A and B.
+
+  // Most significant bits (MSB) and least significant bits (LSB) of full A and B.
+  wire MSB_A, MSB_B, LSB_A;
   assign MSB_A = A[31];
   assign MSB_B = B[31];
-
-  wire LSB_A;             // Least Significant Bit of full A.
   assign LSB_A = A[0];
 
-  // For operations on the upper half, obtain the LSB of the sign-extended A_H.
+  // LSB of the sign-extended upper half of A.
   wire LSB_A_H;
   assign LSB_A_H = sign_extended_A_H[0];
 
   //--------------------------------------------------------------------------
-  // Arithmetic intermediate signals:
-  // Sum: A 33-bit register used for addition/subtraction to capture an extra
-  //      carry-out bit (Sum[32]).
-  // Res: A 32-bit register that holds intermediate results.
+  // Intermediate Signals for Arithmetic Operations
   //--------------------------------------------------------------------------
+
+  // Sum is a 33-bit register to capture carry-out; Res holds the 32-bit result.
   reg [32:0] Sum;
   reg [31:0] Res;
   
   //--------------------------------------------------------------------------
-  // Combinational logic: ALU Operation Cases
+  // Combinational Logic: Compute ALUOut and internalFlags Based on FunSel
   //--------------------------------------------------------------------------
-  // This always block computes the ALU output based on the function select (FunSel).
-  // It also computes intermediate flag values in internalFlags.
+
   always @(*) begin
-    // Clear intermediate signals
+    // Reset intermediate values.
     Sum = 33'b0;
     Res = 32'b0;
     
-    case(FunSel)
-      ///////////// 16-bit Operations on Upper Halves (using sign_extended_A_H/B_H) /////////////
+    case (FunSel)
+      //////////// 16-bit Operations on Upper Halves (using sign_extended_A_H/B_H) ////////////
 
       5'b00000: begin
-        // Pass-through: Output the sign-extended upper half of A.
+        // Pass-through: Output sign-extended upper half of A.
         ALUOut = sign_extended_A_H;
       end
 
       5'b00001: begin
-        // Pass-through: Output the sign-extended upper half of B.
+        // Pass-through: Output sign-extended upper half of B.
         ALUOut = sign_extended_B_H;
       end
 
@@ -122,23 +113,19 @@ module ArithmeticLogicUnit (
       end
 
       5'b00100: begin
-        // 16-bit Addition: Add sign_extended_A_H and sign_extended_B_H.
-        // The extra bit (flagInput[2]) is the carry-out.
+        // 16-bit Addition: sign_extended_A_H + sign_extended_B_H.
         {internalFlags[2], ALUOut} = sign_extended_A_H + sign_extended_B_H;
       end
 
       5'b00101: begin
-        // 16-bit Addition with Carry:
-        // Add sign_extended_A_H, sign_extended_B_H, and the current carry (FlagsOut[2]).
+        // 16-bit Addition with Carry: Add sign-extended halves and current carry.
         {internalFlags[2], ALUOut} = sign_extended_A_H + sign_extended_B_H + FlagsOut[2];
-        // Detect overflow: if operands have the same sign but result's sign differs.
         internalFlags[0] = (MSB_A == MSB_B) && (ALUOut[31] != MSB_A);
       end
 
       5'b00110: begin
-        // 16-bit Subtraction: A_H - B_H computed as A_H + ~B_H + 1.
+        // 16-bit Subtraction: Compute A_H - B_H as A_H + ~B_H + 1.
         {internalFlags[2], ALUOut} = sign_extended_A_H + ~sign_extended_B_H + 1'b1;
-        // Set overflow flag under specific sign conditions.
         if ((MSB_A == 1'b0 && MSB_B == 1'b1 && ALUOut[31] == 1'b1) ||
             (MSB_A == 1'b1 && MSB_B == 1'b0 && ALUOut[31] == 1'b0))
           internalFlags[0] = 1;
@@ -166,29 +153,27 @@ module ArithmeticLogicUnit (
 
       5'b01011: begin
         // Logical Left Shift on upper half:
-        // Shift sign_extended_A_H left by one bit. The new carry becomes the original MSB_A.
+        // Shift sign_extended_A_H left by one bit; new carry is original MSB_A.
         internalFlags[2] = MSB_A;
-        // Shift left and re-sign-extend (using bit 14 of sign_extended_A_H as the new sign bit).
         ALUOut = {{16{sign_extended_A_H[14]}}, sign_extended_A_H[14:0], 1'b0};
       end
 
       5'b01100: begin
         // Logical Right Shift on upper half:
-        // Shift sign_extended_A_H right by one bit. The new carry becomes the original LSB of sign_extended_A_H.
+        // Shift sign_extended_A_H right by one bit; new carry is LSB_A_H.
         internalFlags[2] = LSB_A_H;
-        // Right shift with zero-fill on the left.
         ALUOut = {17'b0, sign_extended_A_H[15:1]};
       end
 
       5'b01101: begin
         // Arithmetic Right Shift on upper half:
-        // Shift right while preserving the sign (the MSB remains unchanged).
+        // Preserve sign by replicating MSB_A.
         ALUOut = {{17{MSB_A}}, sign_extended_A_H[15:1]};
       end
 
       5'b01110: begin
         // Circular (Rotate) Left Shift on upper half using carry:
-        // Shift sign_extended_A_H left by one bit; the LSB becomes the current carry (FlagsOut[2]),
+        // Shift left by one bit, insert current carry (FlagsOut[2]) as LSB,
         // and the original MSB (A[31]) becomes the new carry.
         internalFlags[2] = MSB_A;
         ALUOut = {{16{sign_extended_A_H[14]}}, sign_extended_A_H[14:0], FlagsOut[2]};
@@ -196,13 +181,13 @@ module ArithmeticLogicUnit (
 
       5'b01111: begin
         // Circular (Rotate) Right Shift on upper half using carry:
-        // Shift sign_extended_A_H right by one bit; insert the current carry (FlagsOut[2])
-        // at the MSB. The original LSB of sign_extended_A_H becomes the new carry.
+        // Shift right by one bit, insert current carry (FlagsOut[2]) at MSB,
+        // and the original LSB of sign_extended_A_H becomes the new carry.
         internalFlags[2] = LSB_A_H;
         ALUOut = {{16{FlagsOut[2]}}, FlagsOut[2], sign_extended_A_H[15:1]};
       end
 
-      ///////////// 32-bit Operations (Full A and B) /////////////
+      //////////// 32-bit Operations (Full A and B) ////////////
 
       5'b10000: begin
         // 32-bit Pass-through: Output full A.
@@ -222,7 +207,6 @@ module ArithmeticLogicUnit (
       5'b10011: begin
         // 32-bit Bitwise NOT on B.
         ALUOut = ~B;
-        // Optionally, additional flag handling may be done here.
       end
 
       5'b10100: begin
@@ -238,7 +222,7 @@ module ArithmeticLogicUnit (
       end
 
       5'b10110: begin
-        // 32-bit Subtraction: A - B computed as A + ~B + 1.
+        // 32-bit Subtraction: A - B as A + ~B + 1.
         {internalFlags[2], ALUOut} = A + ~B + 1;
         if ((MSB_A == 1'b0 && MSB_B == 1'b1 && ALUOut[31] == 1'b1) ||
             (MSB_A == 1'b1 && MSB_B == 1'b0 && ALUOut[31] == 1'b0))
@@ -278,44 +262,44 @@ module ArithmeticLogicUnit (
       end
 
       5'b11101: begin
-        // 32-bit Arithmetic Right Shift: Shift A right by one bit, preserving the sign.
+        // 32-bit Arithmetic Right Shift: Shift A right by one bit (preserve sign).
         ALUOut = {MSB_A, A[31:1]};
       end
 
       5'b11110: begin
         // 32-bit Circular (Rotate) Left Shift:
-        // Shift A left by one bit; insert the current carry (FlagsOut[2]) at LSB.
-        // New carry becomes the original MSB of A.
+        // Shift A left by one bit; insert current carry (FlagsOut[2]) at LSB.
+        // The original MSB becomes the new carry.
         internalFlags[2] = MSB_A;
         ALUOut = {A[30:0], FlagsOut[2]};
       end
 
       5'b11111: begin
         // 32-bit Circular (Rotate) Right Shift:
-        // Shift A right by one bit; insert the current carry (FlagsOut[2]) at MSB.
-        // New carry becomes the original LSB of A.
+        // Shift A right by one bit; insert current carry (FlagsOut[2]) at MSB.
+        // The original LSB becomes the new carry.
         internalFlags[2] = LSB_A;
         ALUOut = {FlagsOut[2], A[31:1]};
       end
 
       default: begin
-        // If no valid operation is selected, output zero.
+        // Default operation: output zero.
         ALUOut = 32'b0;
       end
     endcase
 
-    // Final flag assignments (common to all operations):
-    // Zero flag: set if ALUOut equals zero.
+    // Common flag assignments:
+    // Zero flag: 1 if ALUOut is zero.
     internalFlags[3] = (ALUOut == 32'b0);
-    // Negative flag: derived from the MSB of ALUOut.
+    // Negative flag: taken from the MSB of ALUOut.
     internalFlags[1] = ALUOut[31];
   end
 
   //--------------------------------------------------------------------------
-  // Synchronous flag update
+  // Synchronous Update of FlagsOut
   //--------------------------------------------------------------------------
-  // On the rising edge of Clock, if WF (Write Flag) is high, update the output
-  // FlagsOut with the internally computed flags.
+  // On the rising edge of Clock, if WF is asserted, update the external flag output.
+  // Flag bit order: {Zero, Carry, Negative, Overflow} (MSB to LSB).
   always @(posedge Clock) begin
     if (WF) begin
       FlagsOut[3] <= internalFlags[3]; // Zero flag
