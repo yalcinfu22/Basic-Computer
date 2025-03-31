@@ -28,8 +28,8 @@ module ALU(
  input wire [31:0] A,
  input wire [31:0] B,
  input wire [4:0] FunSel,
- input wire Cin,
- input wire [3:0] FlagsOut, // Flags are being modified in FlagRegister.v
+ output wire Cin,
+ output wire [3:0] FlagsOut, // Flags are being modified in FlagRegister.v
  output reg [31:0] ALUOut
 );
 
