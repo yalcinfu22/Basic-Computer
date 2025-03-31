@@ -122,13 +122,25 @@ always @(*) begin
      ALUOut = Res;
      end
      5'b01000: begin
-       // Logic for 01000
+     Res_L = A_H | B_H;
+     Res = {{16{Res_L[15]}}, Res_L};
+     flagInput[1] = MSB_Res;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;  
      end
      5'b01001: begin
-       // Logic for 01001
+     Res_L = A_H ^ B_H;
+     Res = {{16{Res_L[15]}}, Res_L};
+     flagInput[1] = MSB_Res;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;  
      end
      5'b01010: begin
-       // Logic for 01010
+     Res_L = ~(A_H & B_H);
+     Res = {{16{Res_L[15]}}, Res_L};
+     flagInput[1] = MSB_Res;
+     flagInput[3] = (Res == 32'b0);
+     ALUOut = Res;  
      end
      5'b01011: begin
        // Logic for 01011
