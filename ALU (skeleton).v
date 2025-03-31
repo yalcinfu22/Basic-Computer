@@ -292,7 +292,7 @@ always @(*) begin
      ALUOut = Res;
      end
      default: begin
-      // What can be put here?
+       ALUOut = 32'b0;
      end
    endcase
  end
