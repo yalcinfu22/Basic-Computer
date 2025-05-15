@@ -1,214 +1,178 @@
-`timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 30.03.2025 15:57:11
-// Design Name: 
-// Module Name: ALU
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-//   This ALU supports a variety of operations on both the upper 16-bit halves
-//   of inputs (A_H and B_H) and on the full 32-bit words. Operations include
-//   pass-through, bitwise logic, arithmetic (with overflow/carry detection),
-//   shifts, and circular shifts. Flags (Z, C, N, O) are produced via a
-//   separate FlagRegister module.
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//   Detailed inline documentation added to each case.
-//////////////////////////////////////////////////////////////////////////////////
-
-
+// ============================================================================
+//  ArithmeticLogicUnit - full Table-8 implementation, combinational flags
+//  FlagsOut = { Z , C , N , O }
+// ============================================================================
+`timescale 1ns/1ps
 module ArithmeticLogicUnit (
- input wire [31:0] A,
- input wire [31:0] B,
- input wire [4:0] FunSel,
- input wire WF,
- input wire Clock,
- output reg[3:0] FlagsOut, // Flags are being modified in FlagRegister.v
- output reg [31:0] ALUOut
+    input  wire [31:0] A,
+    input  wire [31:0] B,
+    input  wire        CarryIn,   // comes from previous C flag for ADC / rotates
+    input  wire [4:0]  FunSel,    // [4]=0 : 16-bit  |  [4]=1 : 32-bit
+    output reg  [31:0] ALUOut,
+    output reg  [3:0]  FlagsOut   // {Z,C,N,O}
 );
+    //--------------------------------------------------------------------
+    // local helpers
+    //--------------------------------------------------------------------
+    wire         mode16 = ~FunSel[4];
+    wire  [3:0]  op     =  FunSel[3:0];
 
-reg [3:0] flagInput;
+    // upper halves, sign-extended to 32 bits
+    wire [31:0]  AH = {{16{A[31]}}, A[31:16]};
+    wire [31:0]  BH = {{16{B[31]}}, B[31:16]};
 
-initial flagInput = 4'b0000;
+    reg  [3:0]   flagNext;          // {Z,C,N,O}
+    reg          signA, signB, signR;
 
-wire Cin;
-// Note: Driving inputs internally (FlagsOut and Cin) is non-standard.
-// Consider revising the port directions or using internal wires.
-assign Cin = FlagsOut[2];
-wire MSB_A, MSB_B, LSB_A_H, LSB_A;
-wire [31:0] sign_extended_A_H, sign_extended_B_H;
-wire [15:0] A_L, B_L;
-assign A_L = A[15:0];        // Lower 16 bits of A
-assign sign_extended_A_H = {{16{A[31]}}, A[31:16]}; // Upper 16 bits of A with sign extension
-assign B_L = B[15:0];        // Lower 16 bits of B
-assign sign_extended_B_H = {{16{B[31]}}, B[31:16]};       // Upper 16 bits of B
-assign MSB_A = A[31];        // MSB of A
-assign MSB_B = B[31];        // MSB of B
-assign LSB_A = A[0];         // LSB of full A
-assign LSB_A_H =sign_extended_A_H[0];     // LSB of A's upper half
+    //--------------------------------------------------------------------
+    // comb ALU
+    //--------------------------------------------------------------------
+    always @* begin
+        // default
+        ALUOut   = 32'd0;
+        flagNext = 4'd0;            // clear all flags at start of cycle
 
-always @(*) begin
-flagInput[0] = 0;
-   case(FunSel)
-     // ---------------- 16-bit Operations on Upper Half (A_H, B_H) ----------------
-     5'b00000: begin  //Shift A_H with sign extension
-       ALUOut = sign_extended_A_H;
-     end
-     5'b00001: begin //Shift sign_extended_B_H with sign extension
-       ALUOut = sign_extended_B_H;
-     end
-     5'b00010: begin // Not on sign_extended_A_H
-       ALUOut = ~sign_extended_A_H;
-     end
-     5'b00011: begin // Not on sign_extended_B_H
-       ALUOut = ~sign_extended_B_H;
-     end
-     5'b00100: begin // 16-bit Addition: Add sign_extended_A_H and sign_extended_B_H  
-       {flagInput[2], ALUOut} = sign_extended_A_H + sign_extended_B_H; 
-     end
-     5'b00101: begin // 16-bit Addition with Carry: A_H + B_H + Cin.
-     //(first sign_extension then sum) and assigin Carry to flagInput[1]
-     {flagInput[2], ALUOut} = sign_extended_A_H + sign_extended_B_H  + Cin; 
-      flagInput[0] = (MSB_A == MSB_B) && (ALUOut[31] != MSB_A);
-     end
-     5'b00110: begin  // 16-bit Subtraction: A_H - B_H using two's complement:
-       // Compute A_H + ~B_H + Cin.
-       {flagInput[2], ALUOut} = sign_extended_A_H + ~sign_extended_B_H + 1'b1; 
-       // Set overflow flag under specific sign conditions.
-       if((MSB_A == 1'b0 && MSB_B == 1'b1 && ALUOut[31] == 1'b1) || 
-       (MSB_A == 1'b1 && MSB_B == 1'b0 && ALUOut[31] == 1'b0))
-       begin
-         flagInput[0] = 1;
-         end
-     end
-     5'b00111: begin // Bitwise AND on upper halves: A_H & B_H.
-       ALUOut = sign_extended_B_H & sign_extended_A_H;
-     end
-     5'b01000: begin // Bitwise OR on upper halves: A_H | B_H.
-       ALUOut = sign_extended_B_H | sign_extended_A_H;
-     end
-     5'b01001: begin // Bitwise XOR on upper halves: A_H ^ B_H.
-       ALUOut = sign_extended_B_H ^ sign_extended_A_H;;  
-     end
-     5'b01010: begin // Bitwise NAND on upper halves: ~(A_H & B_H).
-       ALUOut = ~(sign_extended_B_H & sign_extended_A_H);
-     end
-     5'b01011: begin // Logical Left Shift on upper half:
-       // Shift A_H left by one bit. New carry comes from original A[31],
-       flagInput[2] = MSB_A; // Carry becomes original A[31] (A_H[15]).
-       ALUOut = {{16{sign_extended_A_H[14]}},
-       sign_extended_A_H[14:0], 1'b0}; // Left shift A_H by one.Then sign extension
-     end
-     5'b01100: begin
-       // Logical Right Shift on upper half:
-       // Shift A_H right by one bit. New carry is the original LSB of A_H.
-       flagInput[2] = LSB_A_H; // Carry becomes the LSB of A_H.
-       ALUOut = {17'b0, sign_extended_A_H[15:1]}; // Right shift A_H by one.
-     end
-     5'b01101: begin
-       // Arithmetic Right Shift on upper half:
-       // Shift right while preserving the sign (MSB_A remains).
-       ALUOut = {{17{MSB_A}},  sign_extended_A_H[15:1]};
-     end
-     5'b01110: begin
-       // Circular (Rotate) Left Shift on upper half using carry:
-       // Shift A_H left by one bit; insert Cin into the LSB.
-       // The original MSB (A[31]) is output as the new carry.
-       flagInput[2] = MSB_A;   // Carry becomes the original A[31].
-       ALUOut = {{16{sign_extended_A_H[14]}}, sign_extended_A_H[14:0], Cin};
-     end
-     5'b01111: begin
-       // Circular (Rotate) Right Shift on upper half using carry:
-       // Shift A_H right by one bit; insert Cin as new MSB.
-       // The original LSB of A_H becomes the new carry.
-       flagInput[2] = LSB_A_H;  // Carry becomes the original LSB of A_H.
-       ALUOut = {{16{Cin}}, Cin, sign_extended_A_H[15:1]};
-     end
+        if (mode16) begin
+            //------------------   16-bit group  -------------------------
+            case (op)
+            // 0 0 0 0  : A_H      (pass)
+            4'b0000 : ALUOut = AH;
 
-     // ------------------- 32-bit Operations -------------------
-     5'b10000: begin // Pass-through: Output full 32-bit A.
-       ALUOut = A;
-     end
-     5'b10001: begin // Pass-through: Output full 32-bit B.
-       ALUOut = B;
-     end
-     5'b10010: begin // Bitwise NOT (32-bit) on A.
-       ALUOut = ~A;
-     end
-     5'b10011: begin // Bitwise NOT (32-bit) on B.
-       flagInput[1] = ~MSB_B;
-       flagInput[3] = (~B == 32'b0);
-       ALUOut = ~B;
-     end
-     5'b10100: begin // 32-bit Addition: A + B.
-      {flagInput[2],ALUOut} = A + B;
-       flagInput[0] = (MSB_A == MSB_B) && (ALUOut[31] != MSB_A); // Overflow.
-     end
-     5'b10101: begin // 32-bit Addition with Carry: A + B + Cin.
-     {flagInput[2],ALUOut} = A + B + Cin;
-       flagInput[0] = (MSB_A == MSB_B) && (ALUOut[31] != MSB_A);
-     end
-     5'b10110: begin // 32-bit Subtraction: A - B as A + ~B + Cin.
-        {flagInput[2],ALUOut} = A + ~B + 1;
+            // 0 0 0 1  : B_H
+            4'b0001 : ALUOut = BH;
 
-       if((MSB_A == 1'b0 && MSB_B == 1'b1 && ALUOut[31] == 1'b1) ||
-       (MSB_A == 1'b1 && MSB_B == 1'b0 && ALUOut[31] == 1'b0)) begin
-         flagInput[0] = 1;
-         end
-     end
-     5'b10111: begin // Bitwise AND (32-bit): A & B.
-       ALUOut = A & B;
-     end
-     5'b11000: begin // Bitwise OR (32-bit): A | B.
-       ALUOut = A | B;
-     end
-     5'b11001: begin // Bitwise XOR (32-bit): A ^ B.
-       ALUOut = A ^ B;
-     end
-     5'b11010: begin // Bitwise NAND (32-bit): ~(A & B).
-       ALUOut = ~(A & B);
-     end
-     5'b11011: begin // Logical Left Shift (32-bit): A << 1.
-       flagInput[2] = MSB_A; // Carry becomes original MSB.     
-       ALUOut = {A[30:0], 1'b0};
-     end
-     5'b11100: begin // Logical Right Shift (32-bit): A >> 1.
-       flagInput[2] = LSB_A; // Carry becomes original LSB.
-       ALUOut = {1'b0, A[31:1]};
-     end
-     5'b11101: begin // Arithmetic Right Shift (32-bit): Preserves sign.
-       ALUOut = {MSB_A, A[31:1]};
-     end
-     5'b11110: begin // Circular (Rotate) Left Shift (32-bit): Shift left and insert Cin.
+            // 0 0 1 0  : NOT A_H
+            4'b0010 : ALUOut = ~AH;
 
-       flagInput[2] = MSB_A;   // Carry is original MSB.
-       ALUOut = {A[30:0], Cin};
-     end
-     5'b11111: begin // Circular (Rotate) Right Shift (32-bit): Shift right and insert Cin.
-       flagInput[2] = LSB_A;   // Carry becomes original LSB.
-       ALUOut = {Cin, A[31:1]};
-     end
-     default: begin
-       ALUOut = 32'b0;
-     end
-   endcase
-        flagInput[3] = (ALUOut == 32'b0);  // Zero flag.
-         flagInput[1] = ALUOut[31];            // Sign flag from ALUOut MSB.
- end
-  always @(posedge Clock) begin
- if(WF) begin
-  FlagsOut[3] <= flagInput[3]; // Zero flag (MSB)
-  FlagsOut[2] <= flagInput[2]; // Carry flag
-  FlagsOut[1] <= flagInput[1]; // Negative flag
-  FlagsOut[0] <= flagInput[0]; // Overflow flag (LSB)
- end
- end
+            // 0 0 1 1  : NOT B_H
+            4'b0011 : ALUOut = ~BH;
+
+            // 0 1 0 0  : A_H + B_H
+            4'b0100 : begin
+                {flagNext[2], ALUOut} = AH + BH;          // C
+                signA = AH[15];  signB = BH[15];  signR = ALUOut[15];
+                flagNext[0] = (signA==signB) && (signR!=signA); // O
+            end
+
+            // 0 1 0 1  : A_H + B_H + CarryIn
+            4'b0101 : begin
+                {flagNext[2], ALUOut} = AH + BH + CarryIn;
+                signA = AH[15];  signB = BH[15];  signR = ALUOut[15];
+                flagNext[0] = (signA==signB) && (signR!=signA);
+            end
+
+            // 0 1 1 0  : A_H - B_H
+            4'b0110 : begin
+                {flagNext[2], ALUOut} = AH + (~BH) + 1'b1; // C = ~borrow
+                signA = AH[15];  signB = BH[15];  signR = ALUOut[15];
+                flagNext[0] = (signA!=signB) && (signR!=signA); // O
+            end
+
+            // 0 1 1 1  : A_H AND B_H
+            4'b0111 : ALUOut = AH & BH;
+
+            // 1 0 0 0  : A_H OR  B_H
+            4'b1000 : ALUOut = AH | BH;
+
+            // 1 0 0 1  : A_H XOR B_H
+            4'b1001 : ALUOut = AH ^ BH;
+
+            // 1 0 1 0  : A_H NAND B_H
+            4'b1010 : ALUOut = ~(AH & BH);
+
+            // 1 0 1 1  : LSL A_H (<<1)
+            4'b1011 : begin
+                flagNext[2] = AH[15];          // old MSB ? Carry
+                ALUOut      = {AH[30:0],1'b0};
+            end
+
+            // 1 1 0 0  : LSR A_H (>>1 logical)
+            4'b1100 : begin
+                flagNext[2] = AH[0];           // old LSB
+                ALUOut      = {1'b0, AH[31:1]};
+            end
+
+            // 1 1 0 1  : ASR A_H (>>1 arithmetic)
+            4'b1101 : begin
+                flagNext[2] = AH[0];
+                ALUOut      = {AH[31], AH[31:1]};  // replicate sign
+            end
+
+            // 1 1 1 0  : CSL A_H (rotate left through Carry)
+            4'b1110 : begin
+                flagNext[2] = AH[15];          // old MSB out
+                ALUOut      = {AH[30:0], CarryIn};
+            end
+
+            // 1 1 1 1  : CSR A_H (rotate right through Carry)
+            4'b1111 : begin
+                flagNext[2] = AH[0];           // old LSB out
+                ALUOut      = {CarryIn, AH[31:1]};
+            end
+            endcase
+
+            // Z & N for 16-bit result
+            flagNext[3] = (ALUOut[15:0] == 16'h0000);
+            flagNext[1] = ALUOut[15];
+
+        end else begin
+            //------------------   32-bit group  -------------------------
+            case (op)
+            4'b0000 : ALUOut = A;                  // A
+            4'b0001 : ALUOut = B;                  // B
+            4'b0010 : ALUOut = ~A;                 // NOT A
+            4'b0011 : ALUOut = ~B;                 // NOT B
+
+            4'b0100 : begin                        // A + B
+                {flagNext[2], ALUOut} = A + B;
+                signA=A[31]; signB=B[31]; signR=ALUOut[31];
+                flagNext[0] = (signA==signB)&&(signR!=signA);
+            end
+            4'b0101 : begin                        // A + B + Cin
+                {flagNext[2], ALUOut} = A + B + CarryIn;
+                signA=A[31]; signB=B[31]; signR=ALUOut[31];
+                flagNext[0] = (signA==signB)&&(signR!=signA);
+            end
+            4'b0110 : begin                        // A - B
+                {flagNext[2], ALUOut} = A + (~B) + 1'b1;
+                signA=A[31]; signB=B[31]; signR=ALUOut[31];
+                flagNext[0] = (signA!=signB)&&(signR!=signA);
+            end
+            4'b0111 : ALUOut = A & B;              // AND
+            4'b1000 : ALUOut = A | B;              // OR
+            4'b1001 : ALUOut = A ^ B;              // XOR
+            4'b1010 : ALUOut = ~(A & B);           // NAND
+
+            4'b1011 : begin                        // LSL A
+                flagNext[2] = A[31];
+                ALUOut      = {A[30:0],1'b0};
+            end
+            4'b1100 : begin                        // LSR A
+                flagNext[2] = A[0];
+                ALUOut      = {1'b0, A[31:1]};
+            end
+            4'b1101 : begin                        // ASR A
+                flagNext[2] = A[0];
+                ALUOut      = {A[31], A[31:1]};
+            end
+            4'b1110 : begin                        // CSL A
+                flagNext[2] = A[31];
+                ALUOut      = {A[30:0], CarryIn};
+            end
+            4'b1111 : begin                        // CSR A
+                flagNext[2] = A[0];
+                ALUOut      = {CarryIn, A[31:1]};
+            end
+            endcase
+
+            // Z & N for 32-bit result
+            flagNext[3] = (ALUOut == 32'h0000_0000);
+            flagNext[1] = ALUOut[31];
+        end
+
+        //----------------------------------------------------------------
+        // drive outputs
+        //----------------------------------------------------------------
+        FlagsOut = flagNext; // combinational - no clock
+    end
 endmodule
