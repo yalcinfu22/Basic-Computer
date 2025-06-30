@@ -1,4 +1,4 @@
-# Computer Organization Project
+# Basic Computer
 
 ## Overview
 This project implements a basic CPU architecture using Verilog. It is divided into two main parts:
