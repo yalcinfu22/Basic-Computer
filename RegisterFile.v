@@ -1,0 +1,70 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 28.03.2025 20:07:13
+// Design Name: 
+// Module Name: RegisterFile
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module RegisterFile(I, RegSel, ScrSel, FunSel,
+                    OutASel, OutBSel, Clock, OutA, OutB);
+input wire [31:0] I;
+input wire [3:0] RegSel;
+input wire [3:0] ScrSel;
+input wire [2:0] FunSel;
+input wire [2:0] OutASel;
+input wire [2:0] OutBSel;
+input wire Clock;
+output reg [31:0] OutA;
+output reg [31:0] OutB;
+wire [31:0] ROut [0:3];
+Register32bit R1(.I(I), .E(RegSel[3]), .FunSel(FunSel), .Clock(Clock), .Q(ROut[0]));
+Register32bit R2(.I(I), .E(RegSel[2]), .FunSel(FunSel), .Clock(Clock), .Q(ROut[1]));
+Register32bit R3(.I(I), .E(RegSel[1]), .FunSel(FunSel), .Clock(Clock), .Q(ROut[2]));
+Register32bit R4(.I(I), .E(RegSel[0]), .FunSel(FunSel), .Clock(Clock), .Q(ROut[3]));
+wire [31:0] SOut [0:3];
+Register32bit S1(.I(I), .E(ScrSel[3]), .FunSel(FunSel), .Clock(Clock), .Q(SOut[0]));
+Register32bit S2(.I(I), .E(ScrSel[2]), .FunSel(FunSel), .Clock(Clock), .Q(SOut[1]));
+Register32bit S3(.I(I), .E(ScrSel[1]), .FunSel(FunSel), .Clock(Clock), .Q(SOut[2]));
+Register32bit S4(.I(I), .E(ScrSel[0]), .FunSel(FunSel), .Clock(Clock), .Q(SOut[3]));
+
+always@(*) // Multiplexer: connects only one register's output to OutA at a time based on OutASel (3rd State buffer is also an alternative)
+begin
+  case (OutASel)
+  3'b000 : OutA = ROut[0];
+  3'b001 : OutA = ROut[1];
+  3'b010 : OutA = ROut[2];
+  3'b011 : OutA = ROut[3];
+  3'b100 : OutA = SOut[0];
+  3'b101 : OutA = SOut[1];
+  3'b110 : OutA = SOut[2];
+  3'b111 : OutA = SOut[3];
+  default: OutA = 32'b0;
+  endcase
+    case (OutBSel)
+  3'b000 : OutB = ROut[0];
+  3'b001 : OutB = ROut[1];
+  3'b010 : OutB = ROut[2];
+  3'b011 : OutB = ROut[3];
+  3'b100 : OutB = SOut[0];
+  3'b101 : OutB = SOut[1];
+  3'b110 : OutB = SOut[2];
+  3'b111 : OutB = SOut[3];
+  default: OutB = 32'b0;
+  endcase
+end
+endmodule

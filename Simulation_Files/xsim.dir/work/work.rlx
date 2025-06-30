@@ -1,0 +1,17 @@
+0.6
+2017.4
+Dec 15 2017
+21:07:18
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/AddressRegisterFile.v,1748281272,verilog,,,,AddressRegisterFile,,,,,,,,
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/ArithmeticLogicUnit.v,1748281272,verilog,,,,ArithmeticLogicUnit,,,,,,,,
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/ArithmeticLogicUnitSystem.v,1748281273,verilog,,,,ArithmeticLogicUnitSystem;mux2to1;mux4to1,,,,,,,,
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/CPUSystem.v,1748281273,verilog,,,,CPUSystem,,,,,,,,
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/CPUSystemSimulation.v,1748281273,verilog,,,,CPUSystemSimulation,,,,,,,,
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/CPUSystemSimulation_Factorial.v,1748281273,verilog,,,,CPUSystemSimulation_Factorial,,,,,,,,
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/DataRegister.v,1748281273,verilog,,,,DataRegister,,,,,,,,
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/Helper.v,1748281273,verilog,,,,CrystalOscillator;FileOperation;ResetGenerator,,,,,,,,
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/InstructionRegister.v,1748281273,verilog,,,,InstructionRegister,,,,,,,,
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/Memory.v,1748281273,verilog,,,,Memory,,,,,,,,
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/Register16bit.v,1748281273,verilog,,,,Register16bit,,,,,,,,
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/Register32bit.v,1748281273,verilog,,,,Register32bit,,,,,,,,
+C:/Users/Ahmet2/Desktop/School/amr/ExampleSubmission_v2 (3)/RegisterFile.v,1748281273,verilog,,,,RegisterFile,,,,,,,,

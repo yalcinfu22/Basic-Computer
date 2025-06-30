@@ -104,16 +104,16 @@ DataRegister DR(
 );
 mux4to1 #() muxA(
 .A(ALUOut),
-.B({{16{OutC[15]}}, OutC}),//?? should I extend the input or output
+.B({16'b0, OutC}),
 .C(DROut),
-.D({{24{IROut[7]}}, IROut[7:0]}),
+.D({24'b0, IROut[7:0]}),
 .S(MuxASel),
 .Out(MuxAOut));
 mux4to1 #() muxB(
 .A(ALUOut),
-.B({{16{OutC[15]}}, OutC}),//?? should I extend the input or output
+.B({16'b0, OutC}),//?? should I extend the input or output
 .C(DROut),
-.D({{24{IROut[7]}}, IROut[7:0]}),
+.D({24'b0, IROut[7:0]}),
 .S(MuxBSel),
 .Out(MuxBOut));
 mux4to1 #(
@@ -136,7 +136,7 @@ RegisterFile RF(.I(MuxAOut),
     .OutB(OutB));
  mux2to1#()D(
  .A(OutA),
- .B({{16{OutC[15]}}, OutC}),
+ .B({16'b0, OutC}),
 .S(MuxDSel),
 .Out(MuxDOut)
  );
